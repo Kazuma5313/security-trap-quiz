@@ -83,6 +83,7 @@ function renderQ(){
         <p>${q.why}</p>
         ${q.extra ? q.extra() : ''}
         <div class="fix"><h3>対策</h3><ul>${q.fix.map(f=>`<li>${f}</li>`).join('')}</ul></div>
+        ${q.src && q.src.length ? `<div class="src"><h3>参照元・もっと詳しく</h3><ul>${q.src.map(s=>`<li><a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">${esc(s.t)}</a><span class="src-by">${esc(s.by)}${s.en?'<span class="src-en">英語</span>':''}</span></li>`).join('')}</ul></div>` : ''}
         <div class="row"><button class="btn" id="next">${S.i===Qs().length-1?'結果を見る':'次の問題へ'}</button></div>
       </div>
     </section>` : '';
