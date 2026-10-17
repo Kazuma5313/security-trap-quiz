@@ -236,3 +236,9 @@ button{font:inherit;color:inherit}
 .src a::after{content:" ↗";font-size:.85em}
 .src-by{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .src-en{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.resume-note{margin:0;font-size:13px;color:var(--muted);background:var(--scene);border-radius:6px;padding:6px 10px}
+.src-help{margin:0;font-size:12px;color:var(--muted)}
+.src ul{gap:12px}
+.src-note{margin-top:4px;padding:8px 10px;background:var(--scene);border-radius:6px;font-size:13px;display:flex;flex-direction:column;gap:3px;line-height:1.6}
+.src-note b{font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.src-note q{quotes:"「" "」";background:var(--mark);padding:0 .2em;overflow-wrap:anywhere}

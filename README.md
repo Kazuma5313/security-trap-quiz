@@ -20,7 +20,7 @@ css/style.css     見た目
 js/common.js      再現画面の部品と文字の分解表示
 js/level1.js      レベル1の問題
 js/level2.js      レベル2の問題
-js/sources.js     各問の解説に出す参照元リンク（問題と同じ順番）
+js/sources.js     各問の参照元リンクと該当箇所（hl はリンク先で強調する文。ページ本文と完全一致させる）
 js/app.js         出題・採点・結果画面
 ```
 

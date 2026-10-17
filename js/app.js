@@ -8,6 +8,24 @@ const Qs = () => L().questions;
 function loadBest(){ try { return JSON.parse(localStorage.getItem('wana-best') || '{}'); } catch(e){ return {}; } }
 function saveBest(id, n){ try { const b = loadBest(); if (!(b[id] >= n)){ b[id] = n; localStorage.setItem('wana-best', JSON.stringify(b)); } } catch(e){} }
 
+// 途中経過を保存し、参照元を見て戻ってきても続きから再開できるようにする
+const PROGRESS_KEY = 'wana-progress';
+let resumed = false;
+function saveProgress(){
+  try {
+    if (S.screen === 'start') localStorage.removeItem(PROGRESS_KEY);
+    else localStorage.setItem(PROGRESS_KEY, JSON.stringify({ S, y: window.scrollY, t: Date.now() }));
+  } catch(e){}
+}
+function loadProgress(){
+  try {
+    const d = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+    if (!d || !d.S || Date.now() - d.t > 24*60*60*1000 || !LEVELS[d.S.lv]) return null;
+    d.S.picks = (d.S.picks || []).map(p => p === null ? undefined : p);
+    return d;
+  } catch(e){ return null; }
+}
+
 function shuffled(n){
   const a = [...Array(n).keys()];
   for (let i = n - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
@@ -83,11 +101,12 @@ function renderQ(){
         <p>${q.why}</p>
         ${q.extra ? q.extra() : ''}
         <div class="fix"><h3>対策</h3><ul>${q.fix.map(f=>`<li>${f}</li>`).join('')}</ul></div>
-        ${q.src && q.src.length ? `<div class="src"><h3>参照元・もっと詳しく</h3><ul>${q.src.map(s=>`<li><a href="${esc(s.u)}" target="_blank" rel="noopener noreferrer">${esc(s.t)}</a><span class="src-by">${esc(s.by)}${s.en?'<span class="src-en">英語</span>':''}</span></li>`).join('')}</ul></div>` : ''}
+        ${q.src && q.src.length ? `<div class="src"><h3>参照元・もっと詳しく</h3><p class="src-help">リンクは新しいタブで開きます。「該当箇所」の文は、多くのブラウザでリンク先に黄色く表示されます。</p><ul>${q.src.map(s=>`<li><a href="${esc(srcHref(s))}" target="_blank" rel="noopener noreferrer">${esc(s.t)}</a><span class="src-by">${esc(s.by)}${s.en?'<span class="src-en">英語</span>':''}</span>${s.hl||s.note?`<div class="src-note"><b>該当箇所</b>${s.hl?`<q>${esc(s.hl)}</q>`:''}<span>${esc(s.note||'')}</span></div>`:''}</li>`).join('')}</ul></div>` : ''}
         <div class="row"><button class="btn" id="next">${S.i===Qs().length-1?'結果を見る':'次の問題へ'}</button></div>
       </div>
     </section>` : '';
   app.innerHTML = header() + `
+    ${resumed ? '<p class="resume-note">前回の続きから再開しました。</p>' : ''}
     <section class="qhead"><span class="eyebrow">${L().name} ステージ${q.stage+1}「${L().stages[q.stage]}」 第${stageNo}問</span><h2>${q.title}</h2><p>${q.lead}</p></section>
     <section class="scene">${q.scene()}</section>
     <section class="choices" role="group" aria-label="選択肢">${choices}</section>${verdict}`;
@@ -99,8 +118,9 @@ function renderQ(){
     app.querySelector('.verdict').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'});
   }
 }
-function pick(k){ if (S.picks[S.i]!==undefined) return; S.picks[S.i]=k; render(); }
+function pick(k){ resumed = false; if (S.picks[S.i]!==undefined) return; S.picks[S.i]=k; render(); }
 function next(){
+  resumed = false;
   if (S.i < Qs().length-1){ S.i++; }
   else { S.screen='result'; if (S.picks.length===Qs().length) saveBest(L().id, correctCount()); }
   render(); window.scrollTo(0,0);
@@ -137,7 +157,7 @@ function renderResult(){
   document.getElementById('review').onclick = () => { S.screen='q'; S.i=0; render(); window.scrollTo(0,0); };
 }
 
-function render(){ if (S.screen==='start') renderStart(); else if (S.screen==='q') renderQ(); else renderResult(); }
+function render(){ if (S.screen==='start') renderStart(); else if (S.screen==='q') renderQ(); else renderResult(); saveProgress(); }
 
 // キーボード：1〜4で選択（表示の番号）、Enterで次へ（ボタンにフォーカス済み）
 document.addEventListener('keydown', e => {
@@ -146,4 +166,11 @@ document.addEventListener('keydown', e => {
   if (order && n>=1 && n<=order.length && S.picks[S.i]===undefined) pick(order[n-1]);
 });
 
+const saved = loadProgress();
+if (saved){ S = saved.S; resumed = S.screen === 'q'; }
 render();
+if (saved) requestAnimationFrame(() => window.scrollTo(0, saved.y || 0));
+// 参照元を開く前・タブを離れる前に、スクロール位置も含めて保存する
+window.addEventListener('pagehide', saveProgress);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveProgress(); });
+app.addEventListener('click', e => { if (e.target.closest('.src a')) saveProgress(); });
